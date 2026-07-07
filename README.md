@@ -1,1 +1,1 @@
-Luminous
+CTGP Revolution Classic
