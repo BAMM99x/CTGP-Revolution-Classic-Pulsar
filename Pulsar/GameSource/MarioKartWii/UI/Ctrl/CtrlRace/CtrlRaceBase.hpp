@@ -26,7 +26,7 @@ public:
     virtual nw4r::lyt::Pane* GetPane() const; //0x44 807ebe40 children use it if they have a pane
     virtual bool IsInactive(); //0x48 807ec3b0 returns SectionMgr -> curSection -> isPaused
     virtual bool HasStarted(); //0x4c 807ec3c4 checks raceinfo->timer
-    void HudSlotColorEnable(const char* pane, bool enable); //807ebf20 pane name from the brlyt
+   void HudSlotColorEnable(const char* pane, bool enable); //807ebf20 pane name from the brlyt
     int GetControlCount() const;
     u8 GetPlayerId() const;
     u8 unknown_0x174[0x18C - 0x174]; //couldn't find the ctor so based on 807f7c18 (ctor for timer element)

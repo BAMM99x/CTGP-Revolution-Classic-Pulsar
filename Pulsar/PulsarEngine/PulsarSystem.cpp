@@ -200,12 +200,12 @@ void System::UpdateContext() {
     const u32 region = this->netMgr.region;
     if (RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_VS_REGIONAL || RKNet::Controller::sInstance->roomType == RKNet::ROOMTYPE_JOINING_REGIONAL) {
         switch (region) {
-            case 0x29A: 
+            case 0x29C: 
                 this->context |= (1 << PULSAR_CT);
                 sInstance->context &= ~(1 << PULSAR_MODE_OTT);
                 break;
                 
-            case 0x29B: 
+            case 0x29D: 
                 this->context |= (1 << PULSAR_CT);
                 this->context |= (1 << PULSAR_MODE_OTT);
                 break;
@@ -267,10 +267,10 @@ kmWrite32(0x80549974, 0x38600001);
 //Skip ESRB page
 kmRegionWrite32(0x80604094, 0x4800001c, 'E');
 
-//Luminous Pack ID
-kmWrite32(0x800017D0, 0x29A);
+//CTGP Classic Pack ID
+kmWrite32(0x800017D0, 0x29C);
 
-//Luminous Pack Version 258
+//CTGP Classic Pack Version 258
 kmWrite32(0x800017D4, 0x00000102);
 
 const char System::pulsarString[] = "/Pulsar";

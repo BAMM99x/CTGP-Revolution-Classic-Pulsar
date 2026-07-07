@@ -36,8 +36,8 @@ public:
     const ut::detail::RuntimeTypeInfo* GetRuntimeTypeInfo() const override; //0xc 8007f2f0
     void DrawSelf(const DrawInfo& info) override; //0x18 8007d1b0
     virtual void AnimateSelf(u64 option); //0x20 8007d2f0
-    ut::Color GetVtxColor(u32 id) const override; //0x24 8007d110
-    void SetVtxColor(u64 id, ut::Color color) override; //0x28 8007d140
+    ut::Color GetVtxColor(u64 id) const override; //0x24 8007d110
+    void SetVtxColor(u32 id, ut::Color color) override; //0x28 8007d140
     u8 GetVtxColorElement(u64 id) const override; //0x34 8007d170
     void SetVtxColorElement(u64 id, u8 value) override; //0x38 8007d190
     Material* FindMaterialByName(const char* name, bool recursive) override; //0x40 8007d010

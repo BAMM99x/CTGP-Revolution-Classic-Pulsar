@@ -54,7 +54,7 @@ void ExpFroom::OnResume() {
 
 void ExpFroom::OnActivate() {
     ExpWFCModeSel::ClearModeContexts();
-    System::sInstance->netMgr.region = 0x29A;
+    System::sInstance->netMgr.region = 0x29C;
     FriendRoom::OnActivate();
 }
 void ExpFroom::ExtOnButtonSelect(PushButton& button, u32 hudSlotId) {

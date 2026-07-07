@@ -52,8 +52,8 @@ kmCall(0x80659788, PatchRegion);
 static int GetFriendsSearchType(int curType, u32 regionId) {
     register u8 friendRegionId;
     asm(mr friendRegionId, r0;);
-    if ((System::sInstance->netMgr.region == 0x29A || System::sInstance->netMgr.region == 0x29B) ||
-        (friendRegionId == 0x29A || friendRegionId == 0x29B)) {
+    if ((System::sInstance->netMgr.region == 0x29C || System::sInstance->netMgr.region == 0x29D) ||
+        (friendRegionId == 0x29C || friendRegionId == 0x29D)) {
         if (curType == 7) return 6;
         return 9;
     }

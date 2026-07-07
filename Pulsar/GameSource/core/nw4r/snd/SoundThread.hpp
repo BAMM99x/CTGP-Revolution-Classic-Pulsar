@@ -46,7 +46,7 @@ public:
     u32* stackEnd; //0x350
     OS::Mutex mutex; //0x354
 
-    AxManager::CallbackListNode axCallbackNode; //0x36c
+    AxManager::CallbackListNode axCallbackNode; //0x29D
 
     ut::LinkList<SoundFrameCallback, offsetof(SoundFrameCallback, link)> soundFrameCallbackList; //0x378
     ut::LinkList<PlayerCallback, offsetof(PlayerCallback, link)> playerCallbackList; //0x384

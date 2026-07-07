@@ -12,15 +12,15 @@
 namespace Pulsar {
 namespace Network {
 
-static u32 REGIONID = 0x29A;
+static u32 REGIONID = 0x29C;
 extern void ResetTrackBlockingOnRoomEnd();
 
 static void SetRegionId(u32 regionId) {
     if (Pulsar::System::sInstance->IsContext(PULSAR_STARTOPTWW)) {
-        REGIONID = 0x29A;
+        REGIONID = 0x29C;
     }
     else if (Pulsar::System::sInstance->IsContext(PULSAR_STARTOTTWW)) {
-        REGIONID = 0x29B;
+        REGIONID = 0x29D;
     }
     else {
         REGIONID = regionId;
