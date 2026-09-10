@@ -1,0 +1,24 @@
+# Only Pulsar/ (the sources) is versioned. Everything below is local build tooling and
+# build output, brought over from vk-Pulsar so the tree can be compiled here.
+
+# Build tooling
+/KamekLinker/
+/Loader/
+/compile_and_link.py
+/demangler.py
+/kamek_whitelist.inc
+/BuildPulsar.bat
+
+# Build output
+/build/
+*.o
+*.pul
+*.map
+build_log.txt
+
+# Editor / OS
+.vs/
+.vscode/
+*.user
+desktop.ini
+Thumbs.db

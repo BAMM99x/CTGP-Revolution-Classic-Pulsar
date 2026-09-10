@@ -52,17 +52,58 @@ static void LoadCorrectTrackListBox(ControlLoader& loader, const char* folder, c
 }
 kmCall(0x807e5f24, LoadCorrectTrackListBox);
 
-int GetTrackVariantBMGId(PulsarId pulsarId, u8 /*variantIdx*/) {
-    return GetTrackBMGId(pulsarId, false);
+/*
+    Variant names do not live next to the main track names. The pack creator writes them
+    at VARIANT_TRACKS_BASE + (trackIdx << 4) + variantIdx, so a track can carry up to 15
+    variants without colliding with the next one. Variant 0 is the main track and keeps
+    its ordinary BMG_TRACKS id.
+*/
+int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx) {
+    const u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
+    if (CupsConfig::IsReg(pulsarId)) {
+        const u32 base = (realId > 32) ? BMG_BATTLE : BMG_REGS;
+        return base + realId;
+    }
+    if (variantIdx == 8) variantIdx = 0;
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (variantIdx == 0 || cupsConfig == nullptr || cupsConfig->GetTrack(pulsarId).variantCount == 0) {
+        return BMG_TRACKS + realId;
+    }
+    return VARIANT_TRACKS_BASE + (realId << 4) + static_cast<u32>(variantIdx);
+}
+
+/*
+    Same as GetTrackBMGId(id, false), except the variant comes from the caller instead of
+    from GetCurVariantIdx(). Online that matters: GetCurVariantIdx() is what *this* console
+    picked, so using it for someone else's vote names the wrong variant.
+*/
+int GetTrackBMGIdForVariant(PulsarId pulsarId, u8 variantIdx) {
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (cupsConfig == nullptr) return BMG_TRACKS;
+    if (CupsConfig::IsReg(pulsarId)) return GetTrackVariantBMGId(pulsarId, 0);
+
+    const u8 variantCount = cupsConfig->GetTrack(pulsarId).variantCount;
+    if (variantCount == 0) return GetTrackVariantBMGId(pulsarId, 0);
+
+    // Out of range means the sender never told us; fall back to the common name rather
+    // than naming a variant at random.
+    if (variantIdx > variantCount) return BMG_TRACKS + CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
+    return GetTrackVariantBMGId(pulsarId, variantIdx);
 }
 
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName) {
-    u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
+    const u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
     if (CupsConfig::IsReg(pulsarId)) {
-        u32 base = (realId > 32) ? BMG_BATTLE : BMG_REGS;
+        const u32 base = (realId > 32) ? BMG_BATTLE : BMG_REGS;
         return base + realId;
     }
-    return BMG_TRACKS + realId;
+
+    u8 variantIdx = 0;
+    const CupsConfig* cupsConfig = CupsConfig::sInstance;
+    if (cupsConfig != nullptr && !useCommonName && cupsConfig->GetTrack(pulsarId).variantCount > 0) {
+        if (pulsarId == cupsConfig->GetWinning()) variantIdx = cupsConfig->GetCurVariantIdx();
+    }
+    return GetTrackVariantBMGId(pulsarId, variantIdx);
 }
 
 int GetTrackBMGByRowIdx(u32 cupTrackIdx) {
@@ -334,31 +375,42 @@ static void ExtCourseSelectCupInitSelf(CtrlMenuCourseSelectCup* courseCups) {
 };
 kmWritePointer(0x808d3190, ExtCourseSelectCupInitSelf); //807e45c0
 
+//BMG escape that switches the text colour to red, as a raw wchar_t sequence.
+static const wchar_t COLOR_ESCAPE_RED[] = {0x001A, 0x0800, 0x0001, 0x0017, 0x0000};
+static const u32 COLOR_ESCAPE_RED_LEN = 4;
+
+/*
+    Strips every 0x1A escape out of a BMG string. A track name that already carries its own
+    colour would otherwise cancel the red we put in front of it, so the name has to be flattened
+    before it is recoloured.
+*/
+static void RemoveAllEscapeSequences(wchar_t* dest, const wchar_t* src, u32 maxLen) {
+    u32 out = 0;
+    while (*src != L'\0' && out + 1 < maxLen) {
+        if (src[0] == 0x001A) {
+            const u8* escapeBytes = reinterpret_cast<const u8*>(src);
+            const u8 escapeLength = escapeBytes[2];
+            src = reinterpret_cast<const wchar_t*>(escapeBytes + escapeLength);
+        }
+        else {
+            dest[out++] = *src++;
+        }
+    }
+    dest[out] = L'\0';
+}
+
 static void BuildBlockedTrackName(
     wchar_t* dest,
     const wchar_t* src,
     u32 maxLen
 ) {
-    if (maxLen < 3) {
+    if (maxLen <= COLOR_ESCAPE_RED_LEN + 1) {
         dest[0] = L'\0';
         return;
     }
 
-    dest[0] = 0xF058;
-
-    u32 i = 0;
-    while (src[i] != L'\0' && 1 + i + 2 < maxLen) {
-        dest[1 + i] = src[i];
-        i++;
-    }
-
-    if (1 + i + 2 < maxLen) {
-        dest[1 + i]     = 0xF058;
-        dest[1 + i + 1] = L'\0';
-    } else {
-        dest[maxLen - 2] = 0xF058;
-        dest[maxLen - 1] = L'\0';
-    }
+    for (u32 i = 0; i < COLOR_ESCAPE_RED_LEN; ++i) dest[i] = COLOR_ESCAPE_RED[i];
+    RemoveAllEscapeSequences(dest + COLOR_ESCAPE_RED_LEN, src, maxLen - COLOR_ESCAPE_RED_LEN);
 }
 
 static wchar_t s_blockedTrackNameBuffer[4][0x100];

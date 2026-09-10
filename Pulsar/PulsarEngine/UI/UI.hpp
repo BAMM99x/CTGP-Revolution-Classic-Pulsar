@@ -36,9 +36,9 @@ enum PulPageId {
     PULPAGE_KORACEEND,
     PULPAGE_KOWINNER,
     PULPAGE_SETTINGS,
+    PULPAGE_VARIANTSELECT,
 
-
-    PULPAGE_MAX = PULPAGE_SETTINGS - PULPAGE_INITIAL + 1
+    PULPAGE_MAX = PULPAGE_VARIANTSELECT - PULPAGE_INITIAL + 1
 };
 
 class ExpSection : public Section { //u32 id -> either a standard pageId but can also be a PulPageId

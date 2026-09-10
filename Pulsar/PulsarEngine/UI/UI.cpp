@@ -10,6 +10,7 @@
 #include <Settings/UI/ExpWFCMainPage.hpp>
 #include <UI/ChangeCombo/ChangeCombo.hpp>
 #include <UI/RoomKick/RoomKickPage.hpp>
+#include <UI/SelectStage/VariantSelect.hpp>
 
 //Pulsar Custom Pages:
 #include <UI/TeamSelect/TeamSelect.hpp>
@@ -114,6 +115,13 @@ void ExpSection::CreatePulPages() {
         this->CreateAndInitPage(*this, PULPAGE_TEAMSELECT);
         this->CreateAndInitPage(*this, RoomKickPage::id);
     }
+    /*
+        The variant page is a second CourseSelect, so it only exists in sections that
+        already own one. Creating it anywhere else would allocate a page nothing can reach.
+    */
+    if(this->Get<Pages::CourseSelect>() != nullptr) {
+        this->CreateAndInitPage(*this, PULPAGE_VARIANTSELECT);
+    }
 }
 
 void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
@@ -182,6 +190,9 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
         case RoomKickPage::id:
             page = new RoomKickPage;
             break;
+        case PULPAGE_VARIANTSELECT:
+            page = new VariantSelect;
+            break;
         case KO::RaceEndPage::id:
             initId = KO::RaceEndPage::fakeId;
             page = new KO::RaceEndPage;
@@ -231,6 +242,8 @@ Page* ExpSection::AddPageLayerAnimatedReturnTopLayer(ExpSection& self, u32 id, u
         page = self.pages[id];
     }
     else page = self.pulPages[id - PULPAGE_INITIAL];
+
+    if(page == nullptr) return nullptr;
 
     self.activePages[++self.layerCount] = page;
     if(animDirection != 0xffffffff) page->animationDirection = animDirection; //inlined Page::SetAnimDirection

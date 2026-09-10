@@ -336,6 +336,15 @@ const Text::Info GetCourseBottomText(PulsarId id, u32* bmgId) {
     return text;
 }
 
+/*
+    Trophies are tracked per track, not per variant, so the variant only reaches this
+    overload for the callers that have one to pass. It exists so VariantSelect does not
+    have to know that.
+*/
+const Text::Info GetCourseBottomText(PulsarId id, u8 variantIdx, u32* bmgId) {
+    return GetCourseBottomText(id, bmgId);
+}
+
 void SetRankingsBMG() {
 
 }

@@ -34,6 +34,7 @@ public:
 
     bool HasExpert() const { return this->expertGhost.isActive; }
     const PulsarId GetPulsarId() const { return this->pulsarId; }
+    u8 GetVariantIdx() const { return this->variantIdx; }
     const Timer& GetExpert() const { return this->expertGhost; }
     u32 GetFavGhostFileIndex(TTMode mode) const { return this->favGhostFileIndex[mode]; }
     void ToggleGhostSaving(bool savingIsEnabled) {
@@ -66,7 +67,7 @@ public:
 
 
 private:
-    Mgr() : pulsarId(PULSARID_NONE), files(nullptr), areGhostsSaving(true) {
+    Mgr() : pulsarId(PULSARID_NONE), files(nullptr), areGhostsSaving(true), variantIdx(0) {
         Racedata* racedata = Racedata::sInstance;
         for(int i = 0; i < 4; ++i) racedata->ghosts[i].ClearBuffer();
     }
@@ -74,7 +75,7 @@ private:
         delete[] this->files; //in case Reset wasn't called before
     }
     static Mgr* sInstance;
-    void Init(PulsarId id);
+    void Init(PulsarId id, u8 variantIdx);
     void Reset();
     void SaveLeaderboard();
     bool SaveGhost(const RKSYS::LicenseLdbEntry& entry, u32 ldbPosition, bool isFlap);
@@ -97,6 +98,7 @@ private:
     u32 lastUsedSlot; //0x28
     u32 favGhostFileIndex[2]; //0x2c for saving and loading
     bool areGhostsSaving; //0x34
+    u8 variantIdx; //0x35
     s32 expertEntryNum; //0x38
     u32 reservedPadding[5];
 
