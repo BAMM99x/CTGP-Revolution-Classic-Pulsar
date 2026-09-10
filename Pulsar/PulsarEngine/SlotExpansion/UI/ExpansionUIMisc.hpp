@@ -9,8 +9,13 @@
 
 namespace Pulsar {
 namespace UI {
+
+// Base of the per-variant track name block written by the pack creator.
+static const u32 VARIANT_TRACKS_BASE = 0x400000;
+
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName);
 int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx);
+int GetTrackBMGIdForVariant(PulsarId pulsarId, u8 variantIdx);
 bool IsTrackBlocked(PulsarId id);
 void SetCourseButtonMessage(PushButton& button, u32 bmgId, PulsarId trackId, u32 buttonIdx);
 void SetVoteControlMessage(VoteControl& vote, u32 bmgId, PulsarId courseVote, u32 playerId);

@@ -147,7 +147,8 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
         u16 hostVote = self.toSendPacket.pulVote;
         if (hostVote == 0xFF) hostVote = cupsConfig->RandomizeTrack();
         self.toSendPacket.pulWinningTrack = hostVote;
-        self.toSendPacket.variantIdx = cupsConfig->RandomizeVariant(static_cast<PulsarId>(hostVote));
+        if(self.toSendPacket.pulVote == 0xFF) self.toSendPacket.variantIdx = cupsConfig->RandomizeVariant(static_cast<PulsarId>(hostVote));
+        else self.toSendPacket.variantIdx = self.toSendPacket.voteVariantIdx[0];
     }
     else {
         const bool isCT = system->IsContext(PULSAR_CT);
@@ -155,6 +156,8 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
         u8 aids[12];
         u8 newVotesAids[12]; //only used for track blocking
         PulsarId votes[12];
+        bool votedRandom[12];
+        for(u8 i = 0; i < 12; ++i) votedRandom[i] = false;
         int playerCount = 0;
         int newVoters = 0;
         for (u8 aid = 0; aid < 12; ++aid) {
@@ -164,6 +167,7 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
 
             PulsarId aidVote = static_cast<PulsarId>(aid == sub.localAid ? self.toSendPacket.pulVote : self.receivedPackets[aid].pulVote);
             if (aidVote == 0xFF) {
+                votedRandom[aid] = true;
                 if (isCT) aidVote = cupsConfig->RandomizeTrack();
                 else {
                     const bool isVS = (mode == RKNet::ONLINEMODE_PRIVATE_VS || mode == RKNet::ONLINEMODE_PUBLIC_VS);
@@ -207,7 +211,11 @@ void ExpSELECTHandler::DecideTrack(ExpSELECTHandler& self) {
         PulsarId vote = static_cast<PulsarId>(votes[winner]);
         self.toSendPacket.winningVoterAid = winner;
         self.toSendPacket.pulWinningTrack = vote;
-        self.toSendPacket.variantIdx = cupsConfig->RandomizeVariant(vote);
+        u8 winnerVariant;
+        if (votedRandom[winner]) winnerVariant = cupsConfig->RandomizeVariant(vote);
+        else if (winner == sub.localAid) winnerVariant = self.toSendPacket.voteVariantIdx[0];
+        else winnerVariant = self.receivedPackets[winner].voteVariantIdx[0];
+        self.toSendPacket.variantIdx = winnerVariant;
         if (isCT) {
             const u32 blockingCount = system->GetInfo().GetTrackBlocking();
             if (blockingCount != 0 && system->netMgr.lastTracks != nullptr) {
@@ -393,6 +401,8 @@ void InitPatch() {
     asm(mr select, r31;);
     select->toSendPacket.pulVote = 0x43;
     select->toSendPacket.pulWinningTrack = 0xff;
+    select->toSendPacket.voteVariantIdx[0] = 0;
+    select->toSendPacket.voteVariantIdx[1] = 0;
     const Settings::Mgr& settings = Settings::Mgr::Get();
     bool allowChangeCombo;
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
@@ -405,6 +415,8 @@ void InitPatch() {
         PulSELECT& cur = select->receivedPackets[aid];
         cur.pulVote = 0x43;
         cur.pulWinningTrack = 0xff;
+        cur.voteVariantIdx[0] = 0;
+        cur.voteVariantIdx[1] = 0;
         reinterpret_cast<RKNet::SELECTHandler*>(select)->ResetPacket(select->receivedPackets[aid]);
     }
 }

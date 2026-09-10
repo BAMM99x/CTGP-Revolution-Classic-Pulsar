@@ -31,14 +31,15 @@ Cornerstone function; Creates the folders if they have been deleted somehow,
 reads them, fetches the leaderboard, creates GhostDatas based on the rkgs, sets the expert time
 */
 
-void Mgr::Init(PulsarId id) {
+void Mgr::Init(PulsarId id, u8 variantIdx) {
     this->Reset();
     this->pulsarId = id;
+    this->variantIdx = variantIdx;
     IO* io = IO::sInstance;
     const System* system = System::sInstance;
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
     const TTMode ttMode = system->ttMode;
-    cupsConfig->GetTrackGhostFolder(folderPath, id);
+    cupsConfig->GetTrackGhostFolder(folderPath, id, variantIdx);
 
     bool exists = io->FolderExists(folderPath); //Create CRC32 folder
     if(!exists) io->CreateFolder(folderPath);
@@ -57,7 +58,7 @@ void Mgr::Init(PulsarId id) {
     s32 expertCRC32 = -1;
     DVD::FileInfo info;
     char expertName[IOS::ipcMaxPath];
-    cupsConfig->GetExpertPath(expertName, id, ttMode);
+    cupsConfig->GetExpertPath(expertName, id, ttMode, variantIdx);
     this->expertEntryNum = DVD::ConvertPathToEntryNum(expertName);
     if(this->expertEntryNum >= 0) {
 
@@ -134,7 +135,7 @@ void Mgr::Reset() {
 
 void Mgr::SaveLeaderboard() {
     char folderPath[IOS::ipcMaxPath];
-    CupsConfig::sInstance->GetTrackGhostFolder(folderPath, this->pulsarId);
+    CupsConfig::sInstance->GetTrackGhostFolder(folderPath, this->pulsarId, this->variantIdx);
     this->leaderboard.Save(folderPath);
 }
 /*
@@ -274,7 +275,7 @@ void Mgr::CreateAndSaveFiles(Mgr* self) {
     u32 prevFileIndex = self->files[self->mainGhostIndex].padding;
     if(prevFileIndex != expertFileIdx) io->GetFolderFilePath(prevGhostFile, prevFileIndex);
 
-    self->Init(CupsConfig::sInstance->GetWinning());
+    self->Init(CupsConfig::sInstance->GetWinning(), CupsConfig::sInstance->GetCurVariantIdx());
 
     if(prevFileIndex == expertFileIdx) self->mainGhostIndex = 0;
     else for(int i = 1; i < self->rkgCount; ++i) {
@@ -293,7 +294,7 @@ void Mgr::CreateAndSaveFiles(Mgr* self) {
 void Mgr::InsertCustomGroupToList(GhostList* list, CourseId) { //check id here
     Mgr* self = Mgr::sInstance;
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
-    self->Init(cupsConfig->GetWinning());
+    self->Init(cupsConfig->GetWinning(), cupsConfig->GetCurVariantIdx());
     u32 index = 0;
     const u32 rkgCount = IO::sInstance->GetFileCount();
     for(int i = 0; i < rkgCount; ++i) {

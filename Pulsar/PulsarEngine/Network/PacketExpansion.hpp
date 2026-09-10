@@ -89,6 +89,10 @@ struct PulSELECT : public RKNet::SELECTPacket {
     u8 racesPerKO;
     bool alwaysFinal;
 
+    // Variant each local player picked for their vote. The host needs it to decide the
+    // winning variant; without it every online race falls back to a random one.
+    u8 voteVariantIdx[2];
+
     // Track blocking sync for regional rooms (late joiner support)
     u8 blockedTrackCount;  // Number of valid entries in blockedTracks
     u8 curBlockingArrayIdx;  // Current write index in circular buffer

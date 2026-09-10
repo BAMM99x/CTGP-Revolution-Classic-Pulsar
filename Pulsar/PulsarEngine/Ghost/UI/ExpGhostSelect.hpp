@@ -43,6 +43,7 @@ private:
 };
 
 const Text::Info GetCourseBottomText(PulsarId id, u32* bmgId);
+const Text::Info GetCourseBottomText(PulsarId id, u8 variantIdx, u32* bmgId);
 
 }//namespace UI
 }//namespace Pulsar

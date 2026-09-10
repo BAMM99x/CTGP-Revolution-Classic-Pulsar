@@ -33,11 +33,11 @@ public:
     int GetEffectiveTrackCount() const { return (definedCTsCupCount + HasRegs() * 8) * 4; } //settings and froom msgs
     void ToggleCTs(bool enabled);
     static void SetLayout();
-    void GetExpertPath(char* dest, PulsarId id, TTMode mode) const;
+    void GetExpertPath(char* dest, PulsarId id, TTMode mode, u8 variantIdx = 0) const;
 
     // Ghosts
     int GetCRC32(PulsarId id) const;
-    void GetTrackGhostFolder(char* dest, PulsarId pulsarId) const;
+    void GetTrackGhostFolder(char* dest, PulsarId pulsarId, u8 variantIdx = 0) const;
 
     //Slot Getters
     CourseId GetCorrectTrackSlot() const;
@@ -89,6 +89,11 @@ public:
 
     u32 RandomizeVariant(PulsarId id) const;
     void SetWinning(PulsarId id, u32 variantIdx = 0xFF);
+    void SetPendingVariant(u8 variantIdx);
+    void ClearPendingVariant();
+    bool HasPendingVariant() const { return this->hasPendingVariant; }
+    u8 GetLastSelectedVariant(PulsarId id) const;
+    void SetLastSelectedVariant(PulsarId id, u8 variantIdx);
     PulsarId GetWinning() const { return this->winningCourse; }
     u8 GetCurVariantIdx() const { return this->curVariantIdx; }
     PulsarId GetSelected() const { return this->selectedCourse; };
@@ -121,6 +126,10 @@ private:
 
     u16* alphabeticalArray; //0x30
     u16* invertedAlphabeticalArray;
+
+    u8* lastVariantIdxByTrack;
+    u8 pendingVariantIdx;
+    bool hasPendingVariant;
 }; //0x28
 
 }//namespace Pulsar
