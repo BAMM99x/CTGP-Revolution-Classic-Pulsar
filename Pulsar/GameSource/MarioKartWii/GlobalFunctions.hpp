@@ -46,5 +46,6 @@ void DivideColorByFloat(ut::Color& dest, const ut::Color& src, float divide); //
 //BMG
 u32 GetCupNameBMGId(u32 cupId); //80833638
 u32 GetPositionBMGId(u32 position); //80833764 position 1-indexed
+u32 GetCharacterBMGId(CharacterId id, bool useGenericMiiName); //80833774
 
 #endif

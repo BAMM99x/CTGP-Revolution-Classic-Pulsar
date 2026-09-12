@@ -89,6 +89,7 @@ void CorrectRoomStartButton(Pages::Globe::MessageWindow& control, u32 bmgId, Tex
         const bool isKO         = hostContext & (1 << PULSAR_MODE_KO);
         const bool isStartOPTWW = hostContext & (1 << PULSAR_STARTOPTWW);
         const bool isStartOTTWW = hostContext & (1 << PULSAR_STARTOTTWW);
+        const bool isExtendedTeams = hostContext & (1 << PULSAR_EXTENDEDTEAMS);
 
         // WW start must win over KO/OTT
         if (isStartOPTWW) {
@@ -96,6 +97,9 @@ void CorrectRoomStartButton(Pages::Globe::MessageWindow& control, u32 bmgId, Tex
         }
         else if (isStartOTTWW) {
             bmgId = BMG_OTTWW_START_MESSAGE;
+        }
+        else if (isExtendedTeams) {
+            bmgId = BMG_EXTENDEDTEAMS_PLAY;
         }
         else if (isOTT || isKO) {
             const bool isTeam = (bmgId == BMG_PLAY_TEAM_GP);
@@ -130,8 +134,14 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
     }
 
     if (rowIdx == 0) {
-        const u32 isOTT = Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_ONLINE) == OTTSETTING_ONLINE_NORMAL;
-        const u32 isKO = Settings::Mgr::Get().GetSettingValue(Settings::SETTINGSTYPE_KO, SETTINGKO_ENABLED) != KOSETTING_DISABLED;
+        const Settings::Mgr& settings = Settings::Mgr::Get();
+        const u32 isOTT = settings.GetSettingValue(Settings::SETTINGSTYPE_OTT, SETTINGOTT_ONLINE) == OTTSETTING_ONLINE_NORMAL;
+        const u32 isKO = settings.GetSettingValue(Settings::SETTINGSTYPE_KO, SETTINGKO_ENABLED) != KOSETTING_DISABLED;
+        /*
+            Read from the settings and not from the context: this is the host's own button,
+            drawn before any ROOM packet has gone out, so the context is still empty here.
+        */
+        const bool isExtendedTeams = settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
 
         if (isOTT && isKO) {
             bmgId = BMG_PLAY_OTTKO;
@@ -139,6 +149,8 @@ u32 CorrectModeButtonsBMG(const RKNet::ROOMPacket& packet) {
             bmgId = BMG_PLAY_OTT;
         } else if (isKO) {
             bmgId = BMG_PLAY_KO;
+        } else if (isExtendedTeams) {
+            bmgId = BMG_EXTENDEDTEAMS_PLAY;
         } else {
             bmgId = BMG_PLAY_GP;
         }

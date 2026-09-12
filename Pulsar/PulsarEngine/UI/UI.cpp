@@ -11,6 +11,9 @@
 #include <UI/ChangeCombo/ChangeCombo.hpp>
 #include <UI/RoomKick/RoomKickPage.hpp>
 #include <UI/SelectStage/VariantSelect.hpp>
+#include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
+#include <UI/ExtendedTeamSelect/Result/ExtendedTeamResultTotal.hpp>
+#include <UI/ExtendedTeamSelect/Result/ExtendedTeamResultIrregularTotal.hpp>
 
 //Pulsar Custom Pages:
 #include <UI/TeamSelect/TeamSelect.hpp>
@@ -57,6 +60,10 @@ void ExpSection::CreatePulPages() {
                 this->CreateAndInitPage(*this, PAGE_TT_SPLITS);
                 Pages::RaceHUD::sInstance->nextPageId = PAGE_TT_SPLITS;
             }
+            if(system->IsContext(PULSAR_EXTENDEDTEAMS)) {
+                this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL);
+                this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR);
+            }
             break;
             case SECTION_P1_WIFI_VS_VOTING:   
             case SECTION_P2_WIFI_VS_VOTING:                   
@@ -89,6 +96,10 @@ void ExpSection::CreatePulPages() {
                 this->CreateAndInitPage(*this, KO::RaceEndPage::id);
                 this->CreateAndInitPage(*this, KO::WinnerPage::id);
             }
+            if(system->IsContext(PULSAR_EXTENDEDTEAMS)) {
+                this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL);
+                this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR);
+            }
             break;
         case SECTION_SINGLE_P_FROM_MENU:         //0x48
         case SECTION_SINGLE_P_TT_CHANGE_CHARA:   //0x49
@@ -114,6 +125,13 @@ void ExpSection::CreatePulPages() {
     if(this->Get<ExpFroom>() != nullptr) {
         this->CreateAndInitPage(*this, PULPAGE_TEAMSELECT);
         this->CreateAndInitPage(*this, RoomKickPage::id);
+        /*
+            Niente controllo sul contesto qui: le pagine della sezione si creano al caricamento
+            del friend room, mentre PULSAR_EXTENDEDTEAMS arriva dopo, dal pacchetto ROOM
+            dell'host. Gatearla sul contesto la lascerebbe nulla proprio quando PrepareOnlinePages
+            la richiede all'avvio della partita.
+        */
+        this->CreateAndInitPage(*this, PULPAGE_EXTENDEDTEAMSELECT);
     }
     /*
         The variant page is a second CourseSelect, so it only exists in sections that
@@ -192,6 +210,15 @@ void ExpSection::CreateAndInitPage(ExpSection& self, u32 id) {
             break;
         case PULPAGE_VARIANTSELECT:
             page = new VariantSelect;
+            break;
+        case ExtendedTeamSelect::id:
+            page = new ExtendedTeamSelect;
+            break;
+        case ExtendedTeamResultTotal::id:
+            page = new ExtendedTeamResultTotal;
+            break;
+        case ExtendedTeamResultIrregularTotal::id:
+            page = new ExtendedTeamResultIrregularTotal;
             break;
         case KO::RaceEndPage::id:
             initId = KO::RaceEndPage::fakeId;

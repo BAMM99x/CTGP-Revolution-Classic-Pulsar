@@ -61,6 +61,9 @@ struct PulROOM : public     RKNet::ROOMPacket {
     u8 curBlockingArrayIdx;  // Current write index in circular buffer
     u8 padding;
     u16 blockedTracks[12];  // PulsarId array (up to MAX_TRACK_BLOCKING tracks)
+
+    // Squadre estese: 4 bit per playerIdx, 12 giocatori = 48 bit = 6 byte
+    u8 extendedTeams[6];
 };
 
 enum SELECTComboStatus {
@@ -113,6 +116,10 @@ public:
 
     static ExpSELECTHandler& Get() { return *reinterpret_cast<ExpSELECTHandler*>(RKNet::SELECTHandler::sInstance); };
     static void DecideTrack(ExpSELECTHandler& self);
+
+    //Variant a given player attached to their vote, local slots included
+    u8 GetVoteVariantIdx(u8 aid, u8 hudSlotId) const;
+
     RKNet::OnlineMode  mode; //from page 0x90 OnInit SectionId Switch
     u32 unknown_0x4;
     PulSELECT toSendPacket; //0x8

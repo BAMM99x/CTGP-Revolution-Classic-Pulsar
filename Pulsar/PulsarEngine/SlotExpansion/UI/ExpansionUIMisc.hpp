@@ -10,7 +10,10 @@
 namespace Pulsar {
 namespace UI {
 
-// Base of the per-variant track name block written by the pack creator.
+/*
+    Base of the per-variant track name block written by the pack creator, relative to
+    BMG_TRACKS: the first variant of track 0 ends up at 0x420000 in the built BMG.
+*/
 static const u32 VARIANT_TRACKS_BASE = 0x400000;
 
 int GetTrackBMGId(PulsarId pulsarId, bool useCommonName);

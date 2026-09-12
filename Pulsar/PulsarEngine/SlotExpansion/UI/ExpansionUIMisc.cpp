@@ -54,9 +54,16 @@ kmCall(0x807e5f24, LoadCorrectTrackListBox);
 
 /*
     Variant names do not live next to the main track names. The pack creator writes them
-    at VARIANT_TRACKS_BASE + (trackIdx << 4) + variantIdx, so a track can carry up to 15
-    variants without colliding with the next one. Variant 0 is the main track and keeps
-    its ordinary BMG_TRACKS id.
+    at BMG_TRACKS + VARIANT_TRACKS_BASE + (trackIdx << 4) + variantIdx, so a track can carry
+    up to 15 variants without colliding with the next one.
+
+    The BMG_TRACKS term matters: the creator emits these ids already offset by the track
+    base (0x420000 for the first variant of track 0), exactly like it offsets plain track
+    names by 0x20000. Leaving it out looks up an id the pack never wrote.
+
+    A track that declares variants also gets a name for variant 0 in this block, which is
+    the one to use; BMG_TRACKS + realId stays the "common" name shared by every variant and
+    is what the cup listings ask for through useCommonName.
 */
 int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx) {
     const u32 realId = CupsConfig::ConvertTrack_PulsarIdToRealId(pulsarId);
@@ -66,10 +73,11 @@ int GetTrackVariantBMGId(PulsarId pulsarId, u8 variantIdx) {
     }
     if (variantIdx == 8) variantIdx = 0;
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
-    if (variantIdx == 0 || cupsConfig == nullptr || cupsConfig->GetTrack(pulsarId).variantCount == 0) {
+    if (cupsConfig == nullptr) return BMG_TRACKS + realId;
+    if (variantIdx == 0 && cupsConfig->GetTrack(pulsarId).variantCount == 0) {
         return BMG_TRACKS + realId;
     }
-    return VARIANT_TRACKS_BASE + (realId << 4) + static_cast<u32>(variantIdx);
+    return BMG_TRACKS + VARIANT_TRACKS_BASE + (realId << 4) + static_cast<u32>(variantIdx);
 }
 
 /*
@@ -100,7 +108,13 @@ int GetTrackBMGId(PulsarId pulsarId, bool useCommonName) {
 
     u8 variantIdx = 0;
     const CupsConfig* cupsConfig = CupsConfig::sInstance;
-    if (cupsConfig != nullptr && !useCommonName && cupsConfig->GetTrack(pulsarId).variantCount > 0) {
+    if (cupsConfig != nullptr && cupsConfig->GetTrack(pulsarId).variantCount > 0) {
+        // The cup strip and the course rows name the group, not whichever variant is loaded.
+        if (useCommonName) return BMG_TRACKS + realId;
+        /*
+            GetCurVariantIdx() is what *this* console picked for the track it is about to
+            play, so it only describes pulsarId when that is the winning track.
+        */
         if (pulsarId == cupsConfig->GetWinning()) variantIdx = cupsConfig->GetCurVariantIdx();
     }
     return GetTrackVariantBMGId(pulsarId, variantIdx);
@@ -256,9 +270,23 @@ kmWrite32(0x808415ac, 0x388000ff);
 kmWrite32(0x80643004, 0x3be000ff);
 kmWrite32(0x808394e8, 0x388000ff);
 kmWrite32(0x80644104, 0x3b5b0000);
+/*
+    Each row of the vote list belongs to a different console, so the variant has to come
+    from that player's SELECT packet. GetCurVariantIdx() would name whatever this console
+    picked for every row.
+*/
 static void CourseVoteBMG(VoteControl* vote, bool isCourseIdInvalid, PulsarId courseVote, MiiGroup& miiGroup, u32 playerId, bool isLocalPlayer, u32 team) {
     u32 bmgId = courseVote;
-    if (bmgId != 0x1101 && bmgId < 0x2498) bmgId = GetTrackBMGId(courseVote, true);
+    if (bmgId != 0x1101 && bmgId < 0x2498) {
+        u8 variantIdx = 0;
+        const Pages::SELECTStageMgr* selectStageMgr = SectionMgr::sInstance->curSection->Get<Pages::SELECTStageMgr>();
+        if (selectStageMgr != nullptr && playerId < 12 && RKNet::SELECTHandler::sInstance != nullptr) {
+            const PlayerInfo& info = selectStageMgr->infos[playerId];
+            const Network::ExpSELECTHandler& handler = Network::ExpSELECTHandler::Get();
+            variantIdx = handler.GetVoteVariantIdx(info.aid, info.hudSlotid);
+        }
+        bmgId = GetTrackBMGIdForVariant(courseVote, variantIdx);
+    }
     vote->Fill(isCourseIdInvalid, bmgId, miiGroup, playerId, isLocalPlayer, team);
     SetVoteControlMessage(*vote, bmgId, courseVote, playerId);
 }

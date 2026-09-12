@@ -52,6 +52,13 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
         src->pulWinningTrack = pulWinning; //this is safe because src is a ptr to the buffer of holder which is always big enough
         const u16 pulVote = CupsConfig::ConvertTrack_RealIdToPulsarId(static_cast<CourseId>(src->playersData[0].courseVote));
         src->pulVote = pulVote;
+        /*
+            A vanilla sized packet carries none of the Pulsar tail, so everything past the
+            vanilla struct is whatever the holder buffer happened to hold. Left alone, that
+            stale byte becomes this aid's "chosen variant" if they win the vote.
+        */
+        src->voteVariantIdx[0] = 0;
+        src->voteVariantIdx[1] = 0;
         src->blockedTrackCount = 0;
         src->curBlockingArrayIdx = 0;
         for (u32 i = 0; i < MAX_TRACK_BLOCKING; ++i) {
@@ -107,6 +114,15 @@ static void AfterSELECTReception(PulSELECT* unused, PulSELECT* src, u32 len) {
     memcpy(&dest, src, sizeof(PulSELECT));
 }
 kmCall(0x80661130, AfterSELECTReception);
+
+u8 ExpSELECTHandler::GetVoteVariantIdx(u8 aid, u8 hudSlotId) const {
+    const RKNet::Controller* controller = RKNet::Controller::sInstance;
+    if (controller == nullptr || aid >= 12 || hudSlotId >= 2) return 0;
+    const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
+
+    if (aid == sub.localAid) return this->toSendPacket.voteVariantIdx[hudSlotId];
+    return this->receivedPackets[aid].voteVariantIdx[hudSlotId];
+}
 
 static u8 GetEngineClass(const ExpSELECTHandler& select) {
     if (select.toSendPacket.phase != 0) return select.toSendPacket.engineClass;

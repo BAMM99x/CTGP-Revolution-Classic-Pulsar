@@ -282,6 +282,40 @@ Binary* Mgr::CreateFromOld(const Binary* old) {
     Binary* ret;
     const u32 version = old->header.version;
     if(version < 2) ret = nullptr;
+    /*
+        Da 4 a 5 il formato e' identico, e' cambiato solo il numero di pagine: e'
+        comparsa la prima user page (Extended Teams). Senza rigenerare il file,
+        GetUserSettingValue leggerebbe una pagina che nel salvataggio non esiste e
+        finirebbe dentro la sezione MISC.
+    */
+    else if(version == 4) {
+        const PagesHolder& oldPages = old->GetSection<PagesHolder>();
+        const MiscParams& oldParams = old->GetSection<MiscParams>();
+        const TrophiesHolder& oldTrophies = old->GetSection<TrophiesHolder>();
+        const GPSection& oldGp = old->GetSection<GPSection>();
+
+        const u32 keptPulsarPages = ut::Min(this->pulsarPageCount, oldPages.pulsarPageCount);
+        const u32 keptUserPages = ut::Min(this->userPageCount, oldPages.userPageCount);
+        const u32 trackCount = oldParams.trackCount;
+        const u32 size = this->GetSettingsBinSize(trackCount);
+
+        ret = IO::sInstance->Alloc<Binary>(size);
+        memset(ret, 0, size);
+        new(ret) Binary(this->pulsarPageCount, this->userPageCount, trackCount);
+
+        PagesHolder& pages = ret->GetSection<PagesHolder>();
+        memcpy(&pages.pages[0], &oldPages.pages[0], keptPulsarPages * sizeof(Page));
+        for(u32 i = 0; i < keptUserPages; ++i) {
+            pages.pages[this->pulsarPageCount + i] = oldPages.pages[oldPages.pulsarPageCount + i];
+        }
+
+        MiscParams& params = ret->GetSection<MiscParams>();
+        memcpy(&params, &oldParams, params.header.size);
+        TrophiesHolder& trophies = ret->GetSection<TrophiesHolder>();
+        memcpy(&trophies, &oldTrophies, trophies.header.size);
+        GPSection& gp = ret->GetSection<GPSection>();
+        memcpy(&gp, &oldGp, oldGp.header.size);
+    }
     else {
         const PagesHolderV1* oldPages;
         const MiscParams* oldParams;
