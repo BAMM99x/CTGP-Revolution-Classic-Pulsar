@@ -40,6 +40,7 @@ public:
 }; //total size 0x174
 
 class BusySymbol : public LayoutUIControl {
+public:
     BusySymbol(); //805f9c34
     ~BusySymbol() override; //805f9c70 vtable 808b9df0
     void InitSelf() override; //805f9d5c 0x18

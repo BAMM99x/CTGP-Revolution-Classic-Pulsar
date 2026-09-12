@@ -22,8 +22,9 @@ public:
     struct Player {
         u32 battleScore; //0x174 from RaceinfoPlayer
         u32 prevBattleScore; //0x178
-        float unknown; //0x178
+        float prevBattleScoreFloat; //0x17c
         u32 playerIdx; //0x180
+        u32 unknown_0x184; //0x184 never read by the game, but it is part of the stride
     }; //0x14
 
     CtrlRaceResultTeam(); //80625388
@@ -34,8 +35,8 @@ public:
     const char* GetClassName() const override; //0x2c 807f6510
 
     void Load(Team team); //807f651c
-    void IsResultAnimDone() const; //807f7224
-    static void ComparePlayers(const Player* first, const Player* second); //807f73c0 qsort func
+    bool IsResultAnimDone() const; //807f7224
+    static int ComparePlayers(const Player* first, const Player* second); //807f73c0 qsort func
 
     Player players[6]; //0x174
     Team team; //0x1ec 0 or 1 since the page has 2, = team
@@ -48,4 +49,5 @@ public:
     u32 teamScore; //0xb74 sum of all raceinfo scores
     CtrlResultAddPoint* addPoints[6]; //0xb78 only for battle WWs
 }; //0xb90
+size_assert(CtrlRaceResultTeam, 0xb90);
 #endif

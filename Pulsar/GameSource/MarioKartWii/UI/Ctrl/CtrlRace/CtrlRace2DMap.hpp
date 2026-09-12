@@ -7,6 +7,7 @@
 
 //Object can refer to karts, the startline, etc...
 class CtrlRace2DMapObject : public CtrlRaceBase { //used as a base for other objects but also used for the start line as is
+public:
     ~CtrlRace2DMapObject() override; //807ea930 vtable 808d3900
     void InitSelf() override; //0x18 807eac2c
     void OnUpdate() override; //0x1c 807eac88
@@ -22,6 +23,7 @@ class CtrlRace2DMapObject : public CtrlRaceBase { //used as a base for other obj
 }; //0x1b4
 
 class CtrlRace2DMapCharacter : public CtrlRace2DMapObject {
+public:
     CtrlRace2DMapCharacter(); //807ea89c
     ~CtrlRace2DMapCharacter() override; //807ea98c vtable 808d389c
     void InitSelf() override; //0x18 807eaecc
@@ -31,7 +33,13 @@ class CtrlRace2DMapCharacter : public CtrlRace2DMapObject {
     void CalculatePosition(const Vec3& kartPosition, Vec2& dest, u32 r6) override; //0x50 807eb3cc
     char* GetPaneName() const override; //0x5c 807ebe60
     virtual void Load(u8 index); //0x60 807eae00
-    u8 unknown_0x1b4[0x1CC - 0x1B4];
+    u8 playerId; //0x1b4
+    u8 padding_0x1b5[3];
+    nw4r::lyt::Pane* charaPane; //0x1b8
+    nw4r::lyt::Pane* charaShadow0Pane; //0x1bc
+    nw4r::lyt::Pane* charaShadow1Pane; //0x1c0
+    nw4r::lyt::Pane* lightPane; //0x1c4
+    Kart::Player* player; //0x1c8
 }; //total size 0x1cc
 
 class CtrlRace2DMapBossObj : public CtrlRace2DMapObject {

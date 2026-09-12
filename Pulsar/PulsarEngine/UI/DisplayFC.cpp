@@ -1,4 +1,5 @@
 #include <UI/DisplayFC.hpp>
+#include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
 
 namespace Pulsar {
 namespace UI {
@@ -27,6 +28,43 @@ void ExpGPVSLeaderboardUpdate::BeforeEntranceAnimations() {
     }
 
     fillLeaderboardResults(GetRowCount(), this->results);
+}
+
+/*
+    How many players a team may hold before the regular board stops fitting them, indexed by
+    how many teams are actually in play. With 0 or 1 team it is always irregular.
+*/
+static const int ALLOWED_PLAYER_PER_TEAM_COUNT[TEAM_COUNT + 1] = { 0, 0, 6, 4, 3, 2, 2 };
+
+/*
+    The only way into the extended team total pages: without this override they are created
+    but nothing reaches them, and the end of a GP shows the ordinary total board instead.
+*/
+PageId ExpGPVSLeaderboardUpdate::GetNextPage() const {
+    if(ExtendedTeamManager::IsActivated()) {
+        RacedataScenario& scenario = Racedata::sInstance->racesScenario;
+        int teamCount = 0;
+        int numPlayerPerTeam[TEAM_COUNT] = { 0 };
+
+        for(int i = 0; i < scenario.playerCount; ++i) {
+            const ExtendedTeamID team = ExtendedTeamManager::sInstance->GetPlayerTeam(i);
+            if(team < TEAM_COUNT) ++numPlayerPerTeam[team];
+        }
+
+        for(int i = 0; i < TEAM_COUNT; ++i) {
+            if(numPlayerPerTeam[i] > 0) ++teamCount;
+        }
+
+        for(int i = 0; i < TEAM_COUNT; ++i) {
+            if(numPlayerPerTeam[i] > ALLOWED_PLAYER_PER_TEAM_COUNT[teamCount]) {
+                return static_cast<PageId>(PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL_IRREGULAR);
+            }
+        }
+
+        return static_cast<PageId>(PULPAGE_EXTENDEDTEAMS_RESULT_TOTAL);
+    }
+
+    return Pages::GPVSLeaderboardUpdate::GetNextPage();
 }
 
 void ExpWWLeaderboardUpdate::OnUpdate() {

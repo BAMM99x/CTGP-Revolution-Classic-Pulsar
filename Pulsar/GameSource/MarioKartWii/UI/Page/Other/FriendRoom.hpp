@@ -23,6 +23,7 @@ class UnkUnkFriendRoomManager {
 }; size_assert(UnkUnkFriendRoomManager, 0x8);
 
 class UnkFriendRoomManager {
+public:
     ~UnkFriendRoomManager(); //805dae80
     UnkFriendRoomManager(); //805daec0
     UnkUnkFriendRoomManager packetHolders[12];
@@ -30,6 +31,9 @@ class UnkFriendRoomManager {
     u32 lastSentAid;
     RKNet::ROOMPacket receivedPackets[24]; //0xf4 arranged by pairs
     u8 unknown_0x154[4];
+
+    void HandleROOMPacket(u8 playerId, u8 myAid, RKNet::ROOMPacket& packet); //805db358
+    void Update(); //805daf38
 }; //0x158
 size_assert(UnkFriendRoomManager, 0x158);
 
@@ -149,7 +153,8 @@ public:
     u32 playerCount; //0x2ae8
     u32 waitingDuration; //0x2aec at 3600 frames something happens with the globe (reset?)
     bool isWaiting; //0x2af0 if true, busySymbol is made visible
-    u8 unknown_0x2af1[0x2af8 - 0x2af1];
+    u8 unknown_0x2af1[0x2af4 - 0x2af1];
+    u32 startedGameMode; //0x2af4 0: VS, 1: Team VS, 2: Coin Runners, 3: Balloon Battle
     u8 lastMessageId; //0x2af8 1 to 4 
     u8 unknown_0x2af9[0x2b08 - 0x2af9];
     UnkFriendRoomManager unknownStruct; //0x2b08

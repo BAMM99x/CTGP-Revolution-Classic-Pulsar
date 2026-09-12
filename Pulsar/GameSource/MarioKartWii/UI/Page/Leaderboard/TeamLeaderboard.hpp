@@ -36,7 +36,7 @@ public:
     void FillRows() override; //0x68 8085e9e4
 
 };
-size_assert(TeamVSLeaderboard, 0x18c4);
+size_assert(TeamVSLeaderboardTotal, 0x18c4);
 
 
 class BattleLeaderboardUpdate : public TeamLeaderboardBase { //ID 0x33

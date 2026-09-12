@@ -16,8 +16,9 @@ CupsConfig::CupsConfig(const CupsHolder& rawCups) : regsMode(rawCups.regsMode),
 //Cup actions initialization
 hasOddCups(false),
 winningCourse(PULSARID_NONE), selectedCourse(PULSARID_FIRSTREG), lastSelectedCup(PULSARCUPID_FIRSTREG), lastSelectedCupButtonIdx(0), isAlphabeticalLayout(false),
-lastVariantIdxByTrack(nullptr), pendingVariantIdx(0), hasPendingVariant(false)
+curVariantIdx(0), lastVariantIdxByTrack(nullptr), pendingVariantIdx(0), hasPendingVariant(false)
 {
+    memset(&this->cur, 0, sizeof(this->cur));
     lastVariantIdxByTrack = new u8[0x2000];
     memset(lastVariantIdxByTrack, 0, 0x2000);
     if (regsMode != 1) {

@@ -22,6 +22,7 @@ class ExpGPVSLeaderboardUpdate : public Pages::GPVSLeaderboardUpdate {
 public:
     void OnUpdate() override;
     void BeforeEntranceAnimations() override;
+    PageId GetNextPage() const override;
 };
 
 class ExpWWLeaderboardUpdate : public Pages::WWLeaderboardUpdate {

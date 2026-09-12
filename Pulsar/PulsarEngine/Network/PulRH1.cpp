@@ -54,9 +54,18 @@ CourseId ReturnCorrectId(const RKNet::RH1Handler& rh1Handler) {
             if(roomType != RKNet::ROOMTYPE_VS_REGIONAL && roomType != RKNet::ROOMTYPE_JOINING_REGIONAL) id = CupsConfig::ConvertTrack_RealIdToPulsarId(curTrack);
             else {
                 id = static_cast<PulsarId>(curTrack);
+                /*
+                    Every step here can legitimately be missing while joining: the buffer index
+                    is whatever the controller last used, the split pointer is null until a RACE
+                    packet arrives, and a vanilla sized RH1 has no variant byte at all.
+                */
                 const u32 lastBufferUsed = controller->lastReceivedBufferUsed[aid][RKNet::PACKET_RACEHEADER1];
-                const RKNet::PacketHolder<Network::PulRH1>* holder = controller->splitReceivedRACEPackets[lastBufferUsed][aid]->GetPacketHolder<Network::PulRH1>();
-                variantIdx = holder->packet->variantIdx;
+                if(lastBufferUsed < 2 && controller->splitReceivedRACEPackets[lastBufferUsed][aid] != nullptr) {
+                    const RKNet::PacketHolder<Network::PulRH1>* holder = controller->splitReceivedRACEPackets[lastBufferUsed][aid]->GetPacketHolder<Network::PulRH1>();
+                    if(holder != nullptr && holder->packet != nullptr && holder->packetSize == sizeof(Network::PulRH1)) {
+                        variantIdx = holder->packet->variantIdx;
+                    }
+                }
             }
             cupsConfig->SetWinning(id, variantIdx);
             return cupsConfig->GetCorrectTrackSlot();

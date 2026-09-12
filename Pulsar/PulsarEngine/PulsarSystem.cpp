@@ -4,6 +4,7 @@
 #include <MarioKartWii/GlobalFunctions.hpp>
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <PulsarSystem.hpp>
+#include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
 #include <Extensions/LECODE/LECODEMgr.hpp>
 #include <Gamemodes/KO/KOMgr.hpp>
 #include <Gamemodes/KO/KOHost.hpp>
@@ -30,6 +31,7 @@ void System::CreateSystem() {
     }
     else system = new System();
     System::sInstance = system;
+    UI::ExtendedTeamManager::CreateInstance(new UI::ExtendedTeamManager());
     ConfigFile& conf = ConfigFile::LoadConfig();
     system->Init(conf);
     prev->BecomeCurrentHeap();
@@ -148,6 +150,7 @@ void System::UpdateContext() {
 
     bool isStartOPTWW = false;
     bool isStartOTWW = false;
+    bool isExtendedTeams = false;
 
 
     u32 newContext = 0;
@@ -169,6 +172,7 @@ void System::UpdateContext() {
                 //isRegsOnly = newContext & (1 << PULSAR_REGSONLY);
                 isStartOPTWW = newContext & (1 << PULSAR_STARTOPTWW);
                 isStartOTWW = newContext & (1 << PULSAR_STARTOTTWW);
+                isExtendedTeams = newContext & (1 << PULSAR_EXTENDEDTEAMS);
                 if(isOTT) {
                     isUMTs &= newContext & (1 << PULSAR_UMTS);
                     isFeather &= newContext & (1 << PULSAR_FEATHER);
@@ -192,7 +196,8 @@ void System::UpdateContext() {
     u32 newContextValue = (isCT << PULSAR_CT) | (isHAW << PULSAR_HAW) | (isMiiHeads << PULSAR_MIIHEADS);
     if(isCT) { //contexts that should only exist when CTs are on
         newContextValue |= (is200 << PULSAR_200) | (isFeather << PULSAR_FEATHER) | (isUMTs << PULSAR_UMTS) | (isMegaTC << PULSAR_MEGATC) | (isOTT << PULSAR_MODE_OTT) | (isKO << PULSAR_MODE_KO) |
-        (isStartOPTWW) << PULSAR_STARTOPTWW | (isStartOTWW) << PULSAR_STARTOTTWW;
+        (isStartOPTWW) << PULSAR_STARTOPTWW | (isStartOTWW) << PULSAR_STARTOTTWW |
+        (isExtendedTeams) << PULSAR_EXTENDEDTEAMS;
     }
     this->context = newContextValue | preserved;
 

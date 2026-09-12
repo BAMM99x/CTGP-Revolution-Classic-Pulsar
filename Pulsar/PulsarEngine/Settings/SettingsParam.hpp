@@ -11,7 +11,7 @@ namespace Settings {
 class Params {
 public:
     static const int pulsarPageCount = 6;
-    static const int userPageCount = 0;
+    static const int userPageCount = 1; //Extended Teams
     static const int pageCount = pulsarPageCount + userPageCount;
 
     static const int maxRadioCount = 6; //per page, due to space
@@ -37,10 +37,34 @@ enum Type {
 
 //If you want to add settings to your packs, they go in this enum, and GetUserSettingValue should be used to obtain the value of a given setting
 enum UserType {
-
+    SETTINGSTYPE_EXTENDEDTEAMS,
 };
 
 }//namespace Settings
+
+enum ExtendedTeamsSettings {
+    RADIO_EXTENDEDTEAMSENABLED = 0,
+    RADIO_EXTENDEDTEAMSLINE = 1,
+    SCROLL_EXTENDEDTEAMSPLAYERS = 0 + 6 //gli scroller partono da 6, vedi MenuSettings
+};
+
+enum ExtendedTeams {
+    EXTENDEDTEAMS_DISABLED,
+    EXTENDEDTEAMS_ENABLED
+};
+
+enum ExtendedTeamsLine {
+    EXTENDEDTEAMS_LINE_TEAM,
+    EXTENDEDTEAMS_LINE_REGION
+};
+
+//Quanti giocatori per squadra quando le squadre estese girano offline.
+enum ExtendedTeamsPlayers {
+    EXTENDEDTEAMS_PLAYERS_2,
+    EXTENDEDTEAMS_PLAYERS_3,
+    EXTENDEDTEAMS_PLAYERS_4,
+    EXTENDEDTEAMS_PLAYERS_6
+};
 
 //SETTINGS ENUM, for the page, DO NOT FORGET THE +6 for scrollers (see menu settings for example)
 //Use these 3 for "u32 setting" in GetSettingValue, the return will be the value of the other enums

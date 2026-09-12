@@ -1,4 +1,5 @@
 #include <kamek.hpp>
+#include <UI/ExtendedTeamSelect/ExtendedTeamManager.hpp>
 #include <MarioKartWii/System/Identifiers.hpp>
 #include <core/System/SystemManager.hpp>
 #include <MarioKartWii/UI/Section/SectionMgr.hpp>
@@ -101,6 +102,11 @@ static bool ConvertFriendRoomStateToRegional() {
         }
 }   
     system->context = 0;
+    if(UI::ExtendedTeamManager::sInstance != nullptr) {
+        UI::ExtendedTeamManager::sInstance->Reset();
+        UI::ExtendedTeamManager::sInstance->ResetPlayers();
+    }
+
     system->UpdateContext();
     controller->StartMatching();
     return true;

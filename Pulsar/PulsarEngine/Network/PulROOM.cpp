@@ -3,6 +3,7 @@
 #include <MarioKartWii/RKNet/RKNetController.hpp>
 #include <Settings/UI/SettingsPanel.hpp>
 #include <Settings/Settings.hpp>
+#include <UI/ExtendedTeamSelect/ExtendedTeamSelect.hpp>
 #include <Network/Network.hpp>
 #include <Network/PacketExpansion.hpp>
 
@@ -59,14 +60,29 @@ static void WriteBlockedTracksToPacket(PulROOM* packet) {
     }
 }
 
+static void HandleExtendedTeamUpdates(const PulROOM& packet) {
+    SectionMgr* sectionMgr = SectionMgr::sInstance;
+    if(sectionMgr == nullptr || sectionMgr->curSection == nullptr) return;
+    UI::ExtendedTeamSelect* ets = sectionMgr->curSection->Get<UI::ExtendedTeamSelect>();
+    if(ets == nullptr) return;
+    for(int id = 0; id < 12; ++id) {
+        const u8 byte = id / 2;
+        const u8 shift = (id % 2) * 4;
+        UI::ExtendedTeamID team = static_cast<UI::ExtendedTeamID>(packet.extendedTeams[byte] >> shift & 0x0F);
+        if(team < UI::TEAM_COUNT) ets->UpdatePlayerTeam(id, team);
+    }
+}
+
 static bool ApplyHostContextLocally(u32 hostContext) {
     System* system = System::sInstance;
 
     const bool isStartOPTWW = hostContext & (1 << PULSAR_STARTOPTWW);
     const bool isStartOTWW  = hostContext & (1 << PULSAR_STARTOTTWW);
+    const bool isExtendedTeams = hostContext & (1 << PULSAR_EXTENDEDTEAMS);
 
     u32 context = (isStartOPTWW << PULSAR_STARTOPTWW) |
-                  (isStartOTWW  << PULSAR_STARTOTTWW);
+                  (isStartOTWW  << PULSAR_STARTOTTWW) |
+                  (isExtendedTeams << PULSAR_EXTENDEDTEAMS);
 
     system->context = context;
     return (isStartOPTWW || isStartOTWW);
@@ -108,7 +124,14 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
             //| settings.GetSettingValue(Settings::SETTINGSTYPE_HOST, SETTINGHOST_ALLOW_REGS) << PULSAR_REGS
             //| (regOnly == HOSTSETTING_ALLOW_REGONLY_ENABLED) << PULSAR_REGSONLY
             | isStartOPTWW << PULSAR_STARTOPTWW
-            | isStartOTWW << PULSAR_STARTOTTWW;
+            | isStartOTWW << PULSAR_STARTOTTWW
+            /*
+                The whole room follows the host here: extended teams replaces the vanilla
+                red/blue split, so it cannot be a per-player choice. It is also off for the
+                worldwide starts, which leave the friend room behind entirely.
+            */
+            | ((settings.GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED)
+               && !isStartOPTWW && !isStartOTWW) << PULSAR_EXTENDEDTEAMS;
 
         u8 raceCount;
         if (koSetting == KOSETTING_ENABLED) raceCount = 0xFE;
@@ -162,6 +185,32 @@ static void BeforeROOMSend(RKNet::PacketHolder<PulROOM>* packetHolder, PulROOM* 
         WriteBlockedTracksToPacket(destPacket);
         ConvertROOMPacketToData(*destPacket);
         (void)ApplyHostContextLocally(destPacket->hostSystemContext);
+
+        /*
+            Senza questo la pagina squadre non mostra mai il bottone di avvio: e' l'unico
+            punto in cui l'host sa che la stanza e' partita davvero.
+        */
+        if(system->IsContext(PULSAR_EXTENDEDTEAMS) && UI::ExtendedTeamManager::sInstance != nullptr) {
+            UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
+        }
+    }
+
+    const bool isExtendedTeams = Settings::Mgr::Get().GetUserSettingValue(Settings::SETTINGSTYPE_EXTENDEDTEAMS, RADIO_EXTENDEDTEAMSENABLED) == EXTENDEDTEAMS_ENABLED;
+    const bool isUpdateTeamMessage = destPacket->messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS;
+    const bool isStartVSRaceMessage = destPacket->messageType == 1 && (destPacket->message == 0 || destPacket->message == 2 || destPacket->message == 3);
+    if((isUpdateTeamMessage || (isStartVSRaceMessage && isExtendedTeams)) && sub.localAid == sub.hostAid
+       && UI::ExtendedTeamManager::sInstance != nullptr) {
+        packetHolder->packetSize = sizeof(PulROOM);
+        const UI::ExtendedTeamPlayer* playerInfo = UI::ExtendedTeamManager::sInstance->GetPlayerInfo();
+
+        memset(destPacket->extendedTeams, 0xff, sizeof(destPacket->extendedTeams));
+        for(int i = 0; i < 12; ++i) {
+            if(playerInfo[i].playerIdx >= 12) continue;
+            const u8 byte = i / 2;
+            const u8 shift = (i % 2) * 4;
+            destPacket->extendedTeams[byte] &= ~(0x0F << shift);
+            destPacket->extendedTeams[byte] |= (playerInfo[i].team & 0x0F) << shift;
+        }
     }
 }
 kmCall(0x8065b15c, BeforeROOMSend);
@@ -169,12 +218,16 @@ kmCall(0x8065b15c, BeforeROOMSend);
 kmWrite32(0x8065add0, 0x60000000);
 static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder, const PulROOM& src, u32 len) {
     register RKNet::ROOMPacket* packet;
+    register u32 aid;
     asm(mr packet, r28;);
+    asm(mr aid, r29;);
 
     const RKNet::Controller* controller = RKNet::Controller::sInstance;
     const RKNet::ControllerSub& sub = controller->subs[controller->currentSub];
 
-    if (src.messageType == 1 && sub.localAid != sub.hostAid && packetHolder->packetSize == sizeof(PulROOM)) {
+    //Only the host ever sends an expanded START packet, so only the host may set the room's rules
+    if (src.messageType == 1 && sub.localAid != sub.hostAid && aid == sub.hostAid
+        && packetHolder->packetSize == sizeof(PulROOM)) {
         ConvertROOMPacketToData(src);
         (void)ApplyHostContextLocally(src.hostSystemContext);
 
@@ -184,7 +237,30 @@ static void AfterROOMReception(const RKNet::PacketHolder<PulROOM>* packetHolder,
             UI::SettingsPanel* panel = static_cast<UI::SettingsPanel*>(topPage);
             panel->OnBackPress(0);
         }
+
+        if(Pulsar::System::sInstance->IsContext(PULSAR_EXTENDEDTEAMS)) {
+            HandleExtendedTeamUpdates(src);
+            if(UI::ExtendedTeamManager::sInstance != nullptr) {
+                UI::ExtendedTeamManager::sInstance->hasFriendRoomStarted = true;
+            }
+        }
     }
+
+    const bool isHost = sub.localAid == sub.hostAid;
+    const bool isFromHost = aid < 12 && aid == sub.hostAid;
+    const bool isFromConnectedPeer = aid < 12 && ((sub.availableAids >> aid) & 1) != 0;
+
+    if(src.messageType == UI::ExtendedTeamManager::MSG_TYPE_UPDATE_TEAMS && !isHost && isFromHost
+       && packetHolder->packetSize == sizeof(PulROOM)) {
+        HandleExtendedTeamUpdates(src);
+    }
+
+    UI::ExtendedTeamManager* extendedTeamManager = UI::ExtendedTeamManager::sInstance;
+    if(extendedTeamManager != nullptr && isHost && isFromConnectedPeer) {
+        if(src.messageType == UI::ExtendedTeamManager::MSG_TYPE_PING) extendedTeamManager->SetActiveStatusForAID(aid);
+        else if(src.messageType == UI::ExtendedTeamManager::MSG_TYPE_ACK_START_RACE) extendedTeamManager->SetDoneStatusForAID(aid);
+    }
+
     memcpy(packet, &src, sizeof(RKNet::ROOMPacket));
 }
 kmCall(0x8065add8, AfterROOMReception);

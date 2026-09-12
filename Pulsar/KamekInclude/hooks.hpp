@@ -50,6 +50,7 @@
 #define kmWrite32(addr, value) kmHook3(kctWrite, 2, (addr), (value))
 #define kmWrite16(addr, value) kmHook3(kctWrite, 3, (addr), (value))
 #define kmWrite8(addr, value) kmHook3(kctWrite, 4, (addr), (value))
+#define kmWriteNop(addr) kmWrite32(addr, 0x60000000)
 
 
 //kmRegionWrite 'E', 'P', 'J', 'K'
